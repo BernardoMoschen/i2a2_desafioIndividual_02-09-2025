@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.venv/
+.env
+.env.*
+.venv*/
+
+# Tooling
+.mypy_cache/
+.pytest_cache/
+.cache/
+
+# Editors
+*.swp
+.idea/
+.vscode/
+
+# Data & reports
+/data/cache/
+/data/input/
+/reports/*.pdf
+/reports/*.html
+!/data/cache/.gitkeep
+!/data/input/.gitkeep
+!/reports/.gitkeep
+/logs/
+!/logs/.gitkeep
+
+# Misc
+.DS_Store
+Thumbs.db

@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  agent:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: i2a2-agent
+    container_name: i2a2-agent
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
+    restart: unless-stopped

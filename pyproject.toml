@@ -1,0 +1,60 @@
+[tool.poetry]
+name = "i2a2-autonomous-agent"
+version = "0.1.0"
+description = "Agente LangChain para análise automatizada de arquivos CSV com geração de gráficos e conclusões."
+authors = ["Seu Nome <seu.email@example.com>"]
+readme = "README.md"
+packages = [{ include = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+langchain = "^0.2.12"
+langchain-openai = "^0.1.14"
+langchain-community = "^0.2.10"
+langgraph = "^0.2.3"
+polars = "^1.9.2"
+pandas = "^2.2.3"
+numpy = "^1.26.4"
+scikit-learn = "^1.5.2"
+pyod = "^2.1.0"
+duckdb = "^1.1.3"
+plotly = "^5.24.0"
+matplotlib = "^3.9.2"
+seaborn = "^0.13.2"
+rich = "^13.8.1"
+pydantic = "^2.9.2"
+fastapi = "^0.114.2"
+uvicorn = { version = "^0.30.6", extras = ["standard"] }
+python-dotenv = "^1.0.1"
+typer = "^0.12.5"
+structlog = "^24.2.0"
+faiss-cpu = { version = "^1.8.0.post1", optional = true }
+openpyxl = "^3.1.5"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-asyncio = "^0.23.8"
+ruff = "^0.6.9"
+mypy = "^1.11.2"
+black = "^24.8.0"
+pre-commit = "^3.8.0"
+
+[tool.poetry.extras]
+vector = ["faiss-cpu"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E203", "E501"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-ra"
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
