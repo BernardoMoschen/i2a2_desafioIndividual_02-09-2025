@@ -1,9 +1,38 @@
 services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: i2a2-ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=10m
+      - OLLAMA_MODEL=mistral
+    volumes:
+      - ollama-data:/root/.ollama
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        TARGET_MODEL="$$OLLAMA_MODEL"
+        if [ -z "$$TARGET_MODEL" ]; then
+          TARGET_MODEL="mistral"
+        fi
+        echo "Ensuring Ollama model '$$TARGET_MODEL' is available..."
+        ollama pull "$$TARGET_MODEL"
+        exec ollama serve
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
       dockerfile: docker/Dockerfile
     container_name: i2a2-backend
+    depends_on:
+      ollama:
+        condition: service_healthy
     env_file:
       - ./backend/.env
     volumes:
@@ -12,3 +41,6 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
+
+volumes:
+  ollama-data:

@@ -60,16 +60,16 @@ poetry run python -m src.cli report
 
 ## 🐳 Docker Compose
 
-1. No diretório raiz do repositório, construa e suba somente o backend:
+1. No diretório raiz do repositório, construa e suba os serviços (Ollama + backend):
 
 ```bash
-docker compose up backend --build
+docker compose up --build
 ```
 
 2. Para rodar em segundo plano:
 
 ```bash
-docker compose up backend --build -d
+docker compose up --build -d
 ```
 
 3. Quando terminar os testes, finalize os containers:
@@ -78,9 +78,11 @@ docker compose up backend --build -d
 docker compose down
 ```
 
-> A API ficará acessível em `http://localhost:8080/docs`.
+> A API ficará acessível em `http://localhost:8080/docs`. O serviço `ollama` fica disponível para o backend através da rede interna do Docker e já baixa o modelo configurado (`OLLAMA_MODEL`) automaticamente durante a inicialização.
 
-> **Dica:** ao utilizar Docker + Ollama local, defina `OLLAMA_BASE_URL=http://host.docker.internal:11434` para permitir que o container se conecte ao serviço hospedado na máquina.
+> **Opcional:** se quiser expor o Ollama para o host (por exemplo, para testes diretos), adicione `ports: ["11434:11434"]` ao serviço `ollama`, certificando-se de que nenhuma instância local esteja ocupando essa porta.
+
+> **Dica:** se você preferir reutilizar um Ollama já instalado na máquina host, ajuste `OLLAMA_BASE_URL=http://host.docker.internal:11434` no `.env` e mantenha o serviço `ollama` desabilitado no Compose.
 
 ## 🧪 Testes e Qualidade
 
