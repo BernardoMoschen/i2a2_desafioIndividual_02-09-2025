@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   backend:
     build:
@@ -13,17 +11,4 @@ services:
       - ./backend/reports:/app/reports
     ports:
       - "8080:8080"
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: i2a2-frontend
-    environment:
-      - VITE_API_BASE_URL=http://backend:8080
-    ports:
-      - "5173:4173"
-    depends_on:
-      - backend
     restart: unless-stopped

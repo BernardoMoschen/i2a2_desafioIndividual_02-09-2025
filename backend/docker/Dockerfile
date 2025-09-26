@@ -17,8 +17,8 @@ RUN pip install "poetry==${POETRY_VERSION}"
 WORKDIR /app
 
 COPY pyproject.toml README.md ./
-COPY requirements.lock ./requirements.lock
-RUN poetry config virtualenvs.create false && poetry install --only main --no-root
+RUN poetry config virtualenvs.create false \
+    && poetry install --only main --no-root
 
 COPY src ./src
 COPY scripts ./scripts
