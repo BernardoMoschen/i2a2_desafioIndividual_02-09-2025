@@ -11,7 +11,7 @@ from src.pipelines.ingestion import load_dataset
 
 def run(path: Path, question: str) -> None:
     ctx = load_dataset(path, lazy=False)
-    agent = build_agent(ctx, AgentConfig())
+    agent = build_agent(ctx, AgentConfig.from_settings())
     answer = agent.invoke({"input": question})
     print(answer)
 

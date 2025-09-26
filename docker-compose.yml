@@ -1,17 +1,29 @@
 version: "3.9"
 
 services:
-  agent:
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: docker/Dockerfile
-    image: i2a2-agent
-    container_name: i2a2-agent
+    container_name: i2a2-backend
     env_file:
-      - .env
+      - ./backend/.env
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/reports:/app/reports
     ports:
       - "8080:8080"
-    volumes:
-      - ./data:/app/data
-      - ./reports:/app/reports
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: i2a2-frontend
+    environment:
+      - VITE_API_BASE_URL=http://backend:8080
+    ports:
+      - "5173:4173"
+    depends_on:
+      - backend
     restart: unless-stopped

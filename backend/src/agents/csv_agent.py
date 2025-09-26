@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List
 
+from src.agents.model_factory import create_chat_model
+from src.config import get_settings
 from src.memory.store import build_memory
 from src.pipelines.ingestion import DatasetContext
 from src.tools import anomaly_tool, chart_tool, stats_tool
@@ -13,13 +15,11 @@ try:  # pragma: no cover
     from langchain.agents import AgentExecutor, create_tool_calling_agent
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.tools import Tool
-    from langchain_openai import ChatOpenAI
 except ImportError:  # pragma: no cover
     AgentExecutor = None  # type: ignore
     create_tool_calling_agent = None  # type: ignore
     ChatPromptTemplate = None  # type: ignore
     Tool = None  # type: ignore
-    ChatOpenAI = None  # type: ignore
 
 if AgentExecutor is None:  # pragma: no cover - typing fallback
     AgentExecutor = Any  # type: ignore
@@ -33,6 +33,25 @@ class AgentConfig:
     temperature: float = 0.0
     max_steps: int = 8
     use_memory: bool = True
+    provider: str = "openai"
+    request_timeout: float = 120.0
+
+    @classmethod
+    def from_settings(cls):
+        settings = get_settings()
+        model = (
+            settings.default_model
+            if settings.llm_provider.lower() != "ollama"
+            else settings.ollama_model
+        )
+        return cls(
+            model=model,
+            temperature=settings.model_temperature,
+            max_steps=8,
+            use_memory=True,
+            provider=settings.llm_provider.lower(),
+            request_timeout=settings.model_request_timeout,
+        )
 
 
 PROMPT_TEMPLATE = """
@@ -44,7 +63,7 @@ em bullet points.
 
 
 def _require_dependencies():
-    if any(dep is None for dep in (AgentExecutor, create_tool_calling_agent, ChatPromptTemplate, Tool, ChatOpenAI)):
+    if any(dep is None for dep in (AgentExecutor, create_tool_calling_agent, ChatPromptTemplate, Tool)):
         raise RuntimeError(
             "Dependências do LangChain/LangGraph não encontradas. Execute `poetry install` antes de usar o agente."
         )
@@ -96,9 +115,15 @@ def build_tools(dataset: DatasetContext) -> List[Any]:
 
 def build_agent(dataset: DatasetContext, config: AgentConfig | None = None) -> Any:
     _require_dependencies()
-    config = config or AgentConfig()
+    if config is None:
+        config = AgentConfig.from_settings()
 
-    llm = ChatOpenAI(model=config.model, temperature=config.temperature)
+    llm = create_chat_model(
+        provider=config.provider.lower(),
+        model=config.model,
+        temperature=config.temperature,
+        request_timeout=config.request_timeout,
+    )
     prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
 
     tools = build_tools(dataset)

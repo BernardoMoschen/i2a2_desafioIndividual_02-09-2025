@@ -56,7 +56,7 @@ async def ask_question(
         raise HTTPException(status_code=404, detail="Dataset não encontrado")
 
     try:
-        agent = build_agent(dataset, AgentConfig())
+        agent = build_agent(dataset, AgentConfig.from_settings())
     except RuntimeError as exc:  # dependências ausentes
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 

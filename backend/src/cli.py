@@ -9,6 +9,7 @@ from typing import Optional
 import typer
 
 from src.agents.csv_agent import AgentConfig, build_agent
+from src.config import get_settings
 from src.pipelines.ingestion import load_dataset
 
 app = typer.Typer(help="Ferramentas CLI para o agente de análise de CSV")
@@ -34,12 +35,27 @@ def ingest(path: Path) -> None:
 
 
 @app.command()
-def ask(path: Path, question: str, model: str = "gpt-4o-mini") -> None:
+def ask(
+    path: Path,
+    question: str,
+    model: Optional[str] = typer.Option(None, help="Modelo a ser utilizado"),
+    provider: Optional[str] = typer.Option(None, help="Provedor do LLM (openai ou ollama)"),
+) -> None:
     """Faz uma pergunta ao agente usando um CSV local."""
 
     ctx = load_dataset(path, lazy=False)
+    settings = get_settings()
+    config = AgentConfig.from_settings()
+    if model:
+        config.model = model
+    if provider:
+        provider = provider.lower()
+        config.provider = provider
+        if not model:
+            config.model = settings.ollama_model if provider.lower() == "ollama" else settings.default_model
+
     try:
-        agent = build_agent(ctx, AgentConfig(model=model))
+        agent = build_agent(ctx, config)
     except RuntimeError as exc:
         typer.secho(str(exc), fg=typer.colors.RED)
         raise typer.Exit(code=1) from exc

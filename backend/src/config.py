@@ -19,10 +19,19 @@ class Settings(BaseSettings):
 
     duckdb_path: Path = Field(default=Path("data/cache/agent.duckdb"))
 
+    # Provedores externos
     openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
     azure_openai_api_key: Optional[str] = Field(default=None, env="AZURE_OPENAI_API_KEY")
     azure_openai_endpoint: Optional[str] = Field(default=None, env="AZURE_OPENAI_ENDPOINT")
+
+    # Configurações de LLM
+    llm_provider: str = Field(default="openai", env="LLM_PROVIDER")
+    default_model: str = Field(default="gpt-4o-mini", env="DEFAULT_MODEL")
+    ollama_model: str = Field(default="mistral", env="OLLAMA_MODEL")
+    ollama_base_url: Optional[str] = Field(default=None, env="OLLAMA_BASE_URL")
+    model_temperature: float = Field(default=0.0, env="MODEL_TEMPERATURE")
+    model_request_timeout: float = Field(default=120.0, env="MODEL_REQUEST_TIMEOUT")
 
     langchain_tracing_v2: bool = Field(default=False, env="LANGCHAIN_TRACING_V2")
     langchain_api_key: Optional[str] = Field(default=None, env="LANGCHAIN_API_KEY")
