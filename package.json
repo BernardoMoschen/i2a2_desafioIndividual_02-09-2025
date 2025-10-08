@@ -1,0 +1,10 @@
+{
+  "name": "i2a2-desafio-streamlit",
+  "version": "0.1.0",
+  "scripts": {
+    "start": "./start.sh",
+    "setup": "./start.sh setup",
+    "run": "./start.sh run",
+    "dev": "PYTHONPATH=backend ./.venv/bin/streamlit run backend/frontend/app.py"
+  }
+}

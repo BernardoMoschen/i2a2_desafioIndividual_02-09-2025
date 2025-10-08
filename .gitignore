@@ -1,0 +1,15 @@
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# Python virtual envs
+backend/.venv/
+
+# VSCode
+.vscode/
+
+data/
+data
+data/*.*backend/data/
+docs/*.csv
+backend/data/
