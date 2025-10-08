@@ -1,17 +1,4 @@
-streamlit==1.30.0
-# allow pip to pick numpy/pandas wheels compatible with Python 3.13
-pandas>=2.2.3
-# keep numpy in 1.26.x range to satisfy streamlit's constraint
-numpy==1.26.4
-plotly==5.24.0
-scikit-learn==1.5.2
-langchain==0.2.12
-python-dotenv==1.0.0
-pydantic-settings>=2.5.2
-uvicorn[standard]
-python-multipart
-rich
-# Removed invalid/typo package 'typerpip' — it is not on PyPI and caused resolver errors.
-# If you intended to include Typer, use 'typer' (CLI lib) instead. Uncomment below as needed.
-# typer
-google-generativeai
+--find-links https://download.pytorch.org/whl/torch_stable.html
+# Central requirements: delegate to backend requirements to avoid duplication.
+# Streamlit Cloud will install the packages referenced below.
+-r backend/requirements.txt
