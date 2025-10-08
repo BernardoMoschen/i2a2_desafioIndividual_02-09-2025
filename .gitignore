@@ -13,3 +13,7 @@ data
 data/*.*backend/data/
 docs/*.csv
 backend/data/
+data/creditcard.csv
+docs/creditcard.csv
+*/*.csv
+*.csv
