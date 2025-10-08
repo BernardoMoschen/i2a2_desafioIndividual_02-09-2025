@@ -163,19 +163,3 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8080
 |                    CLI | Typer + Rich                                       |
 |           Persistência | DuckDB, sistema de arquivos (`/tmp/i2a2_reports/`) |
 |           Configuração | Pydantic Settings + dotenv                         |
-
----
-
-## Observações finais
-
-A solução é organizada para ser **extensível** e **pronta para produção** com pequenas melhorias (ex.: testes unitários adicionais, CI, garantia de instalação das dependências do LLM). A arquitetura favorece manutenção e adição de novas ferramentas sem alterações invasivas no agente.
-
-Se quiser, eu:
-
-- salvo este arquivo com outro nome ou localização;
-- gero um `README.md` adaptado para deploy (com passos de instalação e execução);
-- adiciono exemplos de prompts recomendados para o agente.
-
----
-
-_Arquivo gerado automaticamente a partir da análise do código do repositório._

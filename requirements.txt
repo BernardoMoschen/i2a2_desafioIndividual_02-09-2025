@@ -11,5 +11,7 @@ pydantic-settings>=2.5.2
 uvicorn[standard]
 python-multipart
 rich
-typerpip 
+# Removed invalid/typo package 'typerpip' — it is not on PyPI and caused resolver errors.
+# If you intended to include Typer, use 'typer' (CLI lib) instead. Uncomment below as needed.
+# typer
 google-generativeai
