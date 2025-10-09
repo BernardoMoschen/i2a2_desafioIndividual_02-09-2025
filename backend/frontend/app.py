@@ -1,6 +1,5 @@
 """Interface Streamlit otimizada para análise de dados com IA."""
 
-env_path = Path(__file__).parent.parent / ".env"
 import json
 import os
 import re
