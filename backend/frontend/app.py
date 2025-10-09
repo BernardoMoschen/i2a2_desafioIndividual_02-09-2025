@@ -1,12 +1,20 @@
 """Interface Streamlit otimizada para análise de dados com IA."""
 
+env_path = Path(__file__).parent.parent / ".env"
 import json
 import os
 import re
+import sys
 from pathlib import Path
 from typing import Any, Optional
 
 import streamlit as st
+
+# Ensure backend/ is on sys.path so imports like `from src.agents...` work when
+# Streamlit Cloud runs the app (the cloud runner doesn't set PYTHONPATH).
+backend_root = Path(__file__).resolve().parents[1]
+if str(backend_root) not in sys.path:
+    sys.path.insert(0, str(backend_root))
 
 # Carregar .env
 from dotenv import load_dotenv
