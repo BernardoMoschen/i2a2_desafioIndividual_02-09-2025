@@ -72,24 +72,23 @@ class AgentConfig:
 
 PROMPT_TEMPLATE = dedent(
     """
-    Você é um analista de dados experiente. Analise o dataset disponível respondendo em português, citando
-    as etapas executadas e mencionando os gráficos gerados quando aplicável. Seja transparente sobre
-    limitações, utilize sempre as ferramentas apropriadas antes de responder e finalize com um resumo
-    em bullet points.
+    You are an experienced data analyst. Analyze the provided dataset responding in English, citing
+    the steps you took and mentioning any charts generated when applicable. Be transparent about
+    limitations, always use the appropriate tools before answering, and finish with a short bullet-point summary.
 
-        Você tem acesso às seguintes ferramentas: (as ferramentas disponíveis serão fornecidas pelo sistema e devem ser usadas quando apropriado)
+        You have access to the following tools: (the available tools will be provided by the system and should be used when appropriate)
 
-    Use o seguinte formato:
+    Use the following format:
 
-    Thought: você deve sempre pensar sobre o que fazer
-    Action: a ação a tomar, deve ser uma das ferramentas fornecidas pelo sistema
-    Action Input: a entrada para a ação
-    Observation: o resultado da ação
+    Thought: you should always think about what to do
+    Action: the action to take, must be one of the tools provided by the system
+    Action Input: the input for the action
+    Observation: the result of the action
 
-    ... (este Thought/Action/Action Input/Observation pode se repetir N vezes)
+    ... (this Thought/Action/Action Input/Observation loop may repeat N times)
 
-    Thought: agora sei a resposta final
-    Final Answer: a resposta final para a pergunta de entrada original
+    Thought: now I know the final answer
+    Final Answer: the final answer to the original input question
     """
 ).strip()
 
@@ -138,23 +137,23 @@ def build_tools(dataset: DatasetContext) -> List[Any]:
         numeric_columns = all_columns  # fallback
     
     def get_columns_info(_: Any = None) -> str:
-        """SEMPRE use esta ferramenta PRIMEIRO para descobrir quais colunas existem no dataset."""
+        """ALWAYS use this tool FIRST to discover which columns exist in the dataset."""
         info = f"""
-📊 **Informações do Dataset:**
+📊 **Dataset Information:**
 
-**Total de colunas:** {len(all_columns)}
-**Total de linhas:** {dataset.metadata.num_rows}
+**Total columns:** {len(all_columns)}
+**Total rows:** {dataset.metadata.num_rows}
 
-**Todas as colunas:**
+**All columns:**
 {', '.join(all_columns)}
 
-**Colunas numéricas (para gráficos):**
-{', '.join(numeric_columns) if numeric_columns else 'Nenhuma identificada'}
+**Numeric columns (for charts):**
+{', '.join(numeric_columns) if numeric_columns else 'None detected'}
 
-**Primeiras 3 colunas:**
+**First 3 columns:**
 {', '.join(all_columns[:3])}
 
-💡 **Dica:** Use os nomes EXATOS das colunas ao criar gráficos.
+💡 **Tip:** Use the EXACT column names when creating charts.
         """.strip()
         return info
 
@@ -164,7 +163,7 @@ def build_tools(dataset: DatasetContext) -> List[Any]:
         return f"{result.message}\n\nResumo: {result.summary}"
 
     def histogram(column: str) -> str:
-        """Gera histograma para uma coluna."""
+        """Generate a histogram for a column."""
         # Validar se a coluna existe
         if column not in all_columns:
             return f"❌ Erro: Coluna '{column}' não encontrada. Colunas disponíveis: {', '.join(all_columns)}"
@@ -177,13 +176,13 @@ def build_tools(dataset: DatasetContext) -> List[Any]:
                 return f"❌ Erro: Gráfico gerado mas arquivo não encontrado em {path}"
             
             abs_path = str(path_obj.absolute())
-            return f"✅ Histograma criado com sucesso para a coluna '{column}'!\n\n**📊 Arquivo:** {abs_path}"
+            return f"✅ Histogram successfully created for column '{column}'!\n\n**📊 Arquivo:** {abs_path}"
         except Exception as e:
             import traceback
             return f"❌ Erro ao criar histograma: {str(e)}\n\nDetalhes: {traceback.format_exc()}"
 
     def scatter(x: str, y: str, color: Optional[str] = None) -> str:
-        """Cria gráfico de dispersão entre duas colunas."""
+        """Create a scatter plot between two columns."""
         # Validar colunas
         if x not in all_columns:
             return f"❌ Erro: Coluna X '{x}' não encontrada. Colunas disponíveis: {', '.join(all_columns)}"
@@ -202,16 +201,20 @@ def build_tools(dataset: DatasetContext) -> List[Any]:
             
             # Retornar mensagem com caminho absoluto para o Streamlit detectar
             abs_path = str(path_obj.absolute())
-            return f"✅ Gráfico de dispersão criado com sucesso!\n\n**Colunas:** {x} (eixo X) vs {y} (eixo Y)" + (f" colorido por {color}" if color else "") + f"\n\n**📊 Arquivo:** {abs_path}"
+            return f"✅ Scatter plot created successfully!\n\n**Columns:** {x} (X axis) vs {y} (Y axis)" + (f" colored by {color}" if color else "") + f"\n\n**📊 Arquivo:** {abs_path}"
         except Exception as e:
             import traceback
             return f"❌ Erro ao criar gráfico: {str(e)}\n\nDetalhes: {traceback.format_exc()}"
 
     def anomalies(contamination: float = 0.05) -> Dict[str, Any]:
-        """Detecta outliers usando Isolation Forest."""
+        """Detect outliers using Isolation Forest and produce a small HTML report.
+
+        Returns a dict with contamination, outlier_count, impact_ratio, message, output and report_path (if generated).
+        """
         result = anomaly_tool.detect_anomalies(dataset.data, contamination=contamination)
 
         # Generate a small HTML report so the frontend can render/download it.
+        abs_path = None
         try:
             import tempfile
             import time
@@ -221,30 +224,30 @@ def build_tools(dataset: DatasetContext) -> List[Any]:
             temp_dir.mkdir(parents=True, exist_ok=True)
 
             timestamp = int(time.time())
-            report_name = f"anomalias_{timestamp}.html"
+            report_name = f"anomalies_{timestamp}.html"
             report_path = temp_dir / report_name
 
             html = f"""<!doctype html>
-<html lang="pt-BR">
-<head><meta charset="utf-8"><title>Anomalias - Relatório</title></head>
+<html lang="en">
+<head><meta charset="utf-8"><title>Anomalies - Report</title></head>
 <body>
-  <h2>Detecção de Anomalias</h2>
+  <h2>Anomaly Detection</h2>
   <ul>
-    <li>Contamination (parâmetro): {result.contamination}</li>
-    <li>Outliers detectados: {result.outlier_count}</li>
-    <li>Impacto (percentual): {result.impact_ratio:.2%}</li>
+    <li>Contamination (parameter): {result.contamination}</li>
+    <li>Outliers detected: {result.outlier_count}</li>
+    <li>Impact (percentage): {result.impact_ratio:.2%}</li>
   </ul>
-  <p>Gerado automaticamente pelo agente.</p>
+  <p>Automatically generated by the agent.</p>
 </body>
 </html>"""
 
             report_path.write_text(html, encoding="utf-8")
             abs_path = str(report_path.absolute())
-            message = f"Detectados {result.outlier_count} outliers ({result.impact_ratio:.2%} dos dados)\n\n**📊 Arquivo:** {abs_path}"
+            message = f"Detected {result.outlier_count} outliers ({result.impact_ratio:.2%} of the data)\n\n**📊 Arquivo:** {abs_path}"
         except Exception:
             # If report generation fails, fallback to a plain message
             abs_path = None
-            message = f"Detectados {result.outlier_count} outliers ({result.impact_ratio:.2%} dos dados)"
+            message = f"Detected {result.outlier_count} outliers ({result.impact_ratio:.2%} of the data)"
 
         resp = {
             "contamination": result.contamination,
@@ -259,15 +262,15 @@ def build_tools(dataset: DatasetContext) -> List[Any]:
         return resp
     
     def feature_importance(target_column: str, method: str = "rf") -> Dict[str, Any]:
-        """Calcula importância das features para uma coluna alvo."""
+        """Compute feature importances for a target column."""
         # Validar coluna alvo
         if target_column not in all_columns:
             return {
-                "error": f"Coluna alvo '{target_column}' não encontrada. Colunas disponíveis: {', '.join(all_columns)}"
+                "error": f"Target column '{target_column}' not found. Available columns: {', '.join(all_columns)}"
             }
-        
+
         if feature_tool is None:
-            return {"error": "feature_tool não disponível"}
+            return {"error": "feature_tool not available"}
         try:
             result = feature_tool.compute_feature_importances(
                 dataset.data,

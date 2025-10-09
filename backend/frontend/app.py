@@ -1,4 +1,4 @@
-"""Interface Streamlit otimizada para análise de dados com IA."""
+"""Streamlit interface optimized for AI-driven data analysis."""
 
 import json
 import os
@@ -81,12 +81,34 @@ def _build_agent(dataset: DatasetContext, provider: str, model: str, api_key: st
 
 
 def _render_message(content: Any):
-    """Renderiza mensagens do chat com suporte a gráficos e code blocks."""
+    """Render chat messages with support for charts and code blocks."""
     if isinstance(content, dict):
+        # Preferred: render human-readable output if provided
         if "output" in content:
             st.markdown(content["output"])
-        else:
-            st.json(content)
+            return
+
+        # Fallbacks: some tools return structured metadata with paths (plot_path, plot, report_path)
+        path_keys = ["plot_path", "plot", "report_path", "report", "file"]
+        found_paths = []
+        for k in path_keys:
+            if k in content and content[k]:
+                try:
+                    p = str(content[k])
+                    found_paths.append(p)
+                except Exception:
+                    pass
+
+        if found_paths:
+            output_lines = []
+            if "message" in content:
+                output_lines.append(str(content["message"]))
+            for p in found_paths:
+                output_lines.append(f"\n**📊 Arquivo:** {p}")
+            st.markdown("\n".join(output_lines))
+            return
+
+        st.json(content)
     elif isinstance(content, str):
         # Detectar padrões de arquivo
         file_patterns = [
@@ -206,83 +228,117 @@ def main() -> None:
     """, unsafe_allow_html=True)
     
     # Header
-    st.markdown('<p class="main-header">🤖 Análise de Dados com IA</p>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Carregue seus dados e converse com um assistente de IA especializado</p>', unsafe_allow_html=True)
+    st.markdown('<p class="main-header">🤖 AI Data Analysis</p>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Upload your data and chat with a specialized AI assistant</p>', unsafe_allow_html=True)
     
-    # Sidebar - Configurações
+    # Sidebar - Settings
     with st.sidebar:
-        st.header("⚙️ Configurações")
-        
+        st.header("⚙️ Settings")
+
         settings = _get_settings()
-        
-        # Provedor de IA
-        st.subheader("Provedor de IA")
+
+        # AI Provider
+        st.subheader("AI Provider")
         provider_options = {
             "OpenAI (GPT)": "openai",
             "Google Gemini": "gemini"
         }
         provider_label = st.selectbox(
-            "Escolha o provedor:",
+            "Choose provider:",
             options=list(provider_options.keys()),
             index=0 if settings.llm_provider == "openai" else 1
         )
         provider = provider_options[provider_label]
-        
-        # Modelo
+
+        # Model
         if provider == "openai":
             model_options = ["gpt-4o-mini", "gpt-4o"]
             default_model = settings.default_model if settings.default_model in model_options else "gpt-4o-mini"
         else:
             model_options = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
             default_model = settings.default_model if settings.default_model in model_options else "gemini-1.5-flash"
-        
-        model = st.selectbox("Modelo:", options=model_options, index=model_options.index(default_model) if default_model in model_options else 0)
-        
-        # Chave de API
-        st.subheader("Chave de API")
-        
+
+        model = st.selectbox("Model:", options=model_options, index=model_options.index(default_model) if default_model in model_options else 0)
+
+        # API Key
+        st.subheader("API Key")
+
         if provider == "openai":
             api_key = st.text_input(
                 "OpenAI API Key:",
                 value=os.environ.get("OPENAI_API_KEY", ""),
                 type="password",
-                help="Obtenha em https://platform.openai.com/api-keys"
+                help="Get it at https://platform.openai.com/api-keys"
             )
         else:
             api_key = st.text_input(
                 "Google AI API Key:",
                 value=os.environ.get("GEMINI_API_KEY", os.environ.get("GOOGLE_API_KEY", "")),
                 type="password",
-                help="Obtenha em https://aistudio.google.com/apikey"
+                help="Get it at https://aistudio.google.com/apikey"
             )
-        
+
         st.markdown("---")
-        
+
         # Status
         if st.session_state.get("agent"):
-            st.success("✅ Agente ativo")
+            st.success("✅ Agent active")
             if st.session_state.get("dataset"):
                 ds = st.session_state.dataset
-                st.info(f"📊 {ds.metadata.num_rows:,} linhas × {ds.metadata.num_columns} colunas")
+                st.info(f"📊 {ds.metadata.num_rows:,} rows × {ds.metadata.num_columns} columns")
         else:
-            st.warning("⏳ Aguardando inicialização")
-        
+            st.warning("⏳ Waiting for initialization")
+
         st.markdown("---")
-        
-        # Ajuda
-        with st.expander("❓ Como usar"):
+
+        # How to use
+        with st.expander("❓ How to use"):
             st.markdown("""
-            1. Configure a API Key acima
-            2. Carregue seu arquivo CSV
-            3. Clique em "🚀 Inicializar"
-            4. Faça perguntas sobre os dados
+            1. Configure the API Key above
+            2. Upload your CSV file
+            3. Click "🚀 Initialize"
+            4. Ask questions about the data
             
-            **Exemplos:**
-            - "Quais as principais estatísticas?"
-            - "Mostre correlações"
-            - "Crie um histograma de [coluna]"
-            - "Detecte outliers"
+            **Examples:**
+            - "What are the main statistics?"
+            - "Show correlations"
+            - "Create a histogram of [column]"
+            - "Detect outliers"
             """)
+
+        # Debug - list generated report files
+        with st.expander("🐞 Debug: generated reports (temp)"):
+            try:
+                import tempfile
+                from pathlib import Path
+                temp_dir = Path(tempfile.gettempdir()) / "i2a2_reports"
+                files = []
+                if temp_dir.exists():
+                    for p in sorted(temp_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True):
+                        try:
+                            files.append({
+                                "name": p.name,
+                                "path": str(p.absolute()),
+                                "size_kb": f"{p.stat().st_size/1024:.1f}",
+                                "mtime": p.stat().st_mtime,
+                                "suffix": p.suffix,
+                            })
+                        except Exception:
+                            pass
+
+                if not files:
+                    st.write("No report files found in temp directory.")
+                else:
+                    for f in files[:50]:
+                        st.write(f"- {f['name']} — {f['size_kb']} KB — {f['suffix']}")
+                        if f['suffix'] == '.html':
+                            try:
+                                text = Path(f['path']).read_text(encoding='utf-8')
+                                st.code(text[:1000])
+                            except Exception as e:
+                                st.write(f"Could not read {f['name']}: {e}")
+            except Exception as e:
+                st.write(f"Debug error: {e}")
     
     # Inicializar session state
     if "messages" not in st.session_state:
