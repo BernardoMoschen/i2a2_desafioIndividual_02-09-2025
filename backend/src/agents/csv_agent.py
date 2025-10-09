@@ -210,12 +210,53 @@ def build_tools(dataset: DatasetContext) -> List[Any]:
     def anomalies(contamination: float = 0.05) -> Dict[str, Any]:
         """Detecta outliers usando Isolation Forest."""
         result = anomaly_tool.detect_anomalies(dataset.data, contamination=contamination)
-        return {
+
+        # Generate a small HTML report so the frontend can render/download it.
+        try:
+            import tempfile
+            import time
+            from pathlib import Path
+
+            temp_dir = Path(tempfile.gettempdir()) / "i2a2_reports"
+            temp_dir.mkdir(parents=True, exist_ok=True)
+
+            timestamp = int(time.time())
+            report_name = f"anomalias_{timestamp}.html"
+            report_path = temp_dir / report_name
+
+            html = f"""<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>Anomalias - Relatório</title></head>
+<body>
+  <h2>Detecção de Anomalias</h2>
+  <ul>
+    <li>Contamination (parâmetro): {result.contamination}</li>
+    <li>Outliers detectados: {result.outlier_count}</li>
+    <li>Impacto (percentual): {result.impact_ratio:.2%}</li>
+  </ul>
+  <p>Gerado automaticamente pelo agente.</p>
+</body>
+</html>"""
+
+            report_path.write_text(html, encoding="utf-8")
+            abs_path = str(report_path.absolute())
+            message = f"Detectados {result.outlier_count} outliers ({result.impact_ratio:.2%} dos dados)\n\n**📊 Arquivo:** {abs_path}"
+        except Exception:
+            # If report generation fails, fallback to a plain message
+            abs_path = None
+            message = f"Detectados {result.outlier_count} outliers ({result.impact_ratio:.2%} dos dados)"
+
+        resp = {
             "contamination": result.contamination,
             "outlier_count": result.outlier_count,
             "impact_ratio": result.impact_ratio,
-            "message": f"Detectados {result.outlier_count} outliers ({result.impact_ratio:.2%} dos dados)"
+            "message": message,
+            "output": message,
         }
+        if abs_path:
+            resp["report_path"] = abs_path
+
+        return resp
     
     def feature_importance(target_column: str, method: str = "rf") -> Dict[str, Any]:
         """Calcula importância das features para uma coluna alvo."""
@@ -235,10 +276,23 @@ def build_tools(dataset: DatasetContext) -> List[Any]:
                 task="auto",
                 top_k=10
             )
+            # Build an output string that includes the plot path so the frontend can detect it
+            output = result.message
+            plot_path = result.plot_path
+            try:
+                from pathlib import Path
+                if plot_path:
+                    p = Path(plot_path)
+                    if p.exists():
+                        output = f"{result.message}\n\n**📊 Arquivo:** {str(p.absolute())}"
+            except Exception:
+                pass
+
             return {
                 "importances": result.importances,
                 "message": result.message,
-                "plot_path": result.plot_path
+                "plot_path": result.plot_path,
+                "output": output,
             }
         except Exception as e:
             return {"error": str(e)}
@@ -426,6 +480,45 @@ def build_tools(dataset: DatasetContext) -> List[Any]:
                 description="⭐ Calcula importância das features para prever uma coluna alvo. Parâmetros: target_column (coluna alvo), method (opcional: 'rf' ou 'mutual_info'). Use info_colunas PRIMEIRO.",
                 func=feature_importance,
                 args_schema=FeatureImportanceInput
+            )
+        )
+
+        # Optional correlation tool (returns heatmap and top pairs)
+        try:
+            from src.tools.correlation_tool import compute_correlations
+        except Exception:
+            compute_correlations = None
+
+        class CorrelationInput(BaseModel):
+            method: str = Field(default="pearson", description="Método de correlação: 'pearson' ou 'spearman'")
+            top_k: int = Field(default=10, description="Número de pares a retornar")
+
+        def correlacao(method: str = "pearson", top_k: int = 10) -> Dict[str, Any]:
+            if compute_correlations is None:
+                return {"error": "correlation tool not available"}
+            try:
+                result = compute_correlations(dataset.data, method=method, top_k=top_k)
+                output = "Matriz de correlação calculada."
+                plot_path = result.plot_path
+                try:
+                    from pathlib import Path
+                    if plot_path:
+                        p = Path(plot_path)
+                        if p.exists():
+                            output = f"Matriz de correlação calculada.\n\n**📊 Arquivo:** {str(p.absolute())}"
+                except Exception:
+                    pass
+
+                return {"matrix": result.matrix, "top_pairs": result.top_pairs, "plot": result.plot_path, "output": output}
+            except Exception as e:
+                return {"error": str(e)}
+
+        tools.append(
+            StructuredTool(
+                name="correlacao",
+                description="🔗 Calcula matriz de correlação e gera heatmap. Parâmetros: method (pearson|spearman), top_k (int).",
+                func=correlacao,
+                args_schema=CorrelationInput,
             )
         )
         
